@@ -24,9 +24,11 @@ local UIProfileSpawner = require("scripts/managers/ui/ui_profile_spawner")
 local CosmeticsInspectViewDefinitions = require(
     "scripts/ui/views/cosmetics_inspect_view/cosmetics_inspect_view_definitions")
 local UIWidgetGrid = require("scripts/ui/widget_logic/ui_widget_grid")
-
+local ViewElementInputLegend = require("scripts/ui/view_elements/view_element_input_legend/view_element_input_legend")
 
 local selected_profile
+local hide_equipment = false
+local view_whole_bundle = true
 
 -- Grab all account operatives on load
 mod:hook_safe(CLASS.StoreView, "on_enter", function(self)
@@ -41,9 +43,11 @@ mod:hook_safe(CLASS.StoreItemDetailView, "cb_on_preview_with_gear_toggled", func
 end)
 
 mod:hook_safe(CLASS.CosmeticsInspectView, "on_enter", function(self)
-    self.is_weapon_preview = true
     mod.show_on_character_by_default(self)
-    mod.display_cosmetics(self)
+    if self._selected_slot.slot_type == "weapon" then
+        self.is_weapon_preview = true
+        mod.display_cosmetics(self, hide_equipment)
+    end
 end)
 
 mod:hook_safe(CLASS.CosmeticsInspectView, "on_exit", function(self)
@@ -165,7 +169,7 @@ CosmeticsInspectView._setup_item_description = function(self, description_text, 
 
         if selected_profile then
             _add_text_widget(CosmeticsInspectViewDefinitions.item_sub_title_pass,
-                Utf8.upper("Currently showing on operative:"))
+                Utf8.upper(Localize("loc_CVI_currently_showing")))
             _add_spacing(10)
             local text
 
@@ -208,8 +212,12 @@ mod:hook_safe(CLASS.StoreItemDetailView, "_present_item", function(self, item, v
     local preview_on_player = item_type ~= "WEAPON_RANGED" and item_type ~= "WEAPON_MELEE" and item_type ~= "WEAPON_SKIN" and
         item_type ~= "WEAPON_TRINKET"
 
+    local element = self._selected_element
+    self._valid_bundle = mod.show_toggle_view_bundle(self, element)
+    self._valid_equipment = mod.show_toggle_equipment(self, element)
+
     if preview_on_player then
-        mod.display_cosmetics(self)
+        mod.display_cosmetics(self, hide_equipment)
     else
     end
 end)
@@ -225,7 +233,12 @@ mod:hook_safe(CLASS.StoreItemDetailView, "_present_bundle", function(self)
         bundle_background_widget.style.bundle.material_values.texture_map = nil
     end
 
-    mod.display_cosmetics(self, true)
+    view_whole_bundle = true
+    mod.display_cosmetics(self, hide_equipment)
+
+    local element = self._selected_element
+    self._valid_bundle = mod.show_toggle_view_bundle(self, element)
+    self._valid_equipment = mod.show_toggle_equipment(self, element)
 
     -- change camera to full body view
     local breed_name = self._presentation_profile and self._presentation_profile.archetype.breed or "human"
@@ -265,14 +278,29 @@ mod.display_cosmetics = function(self, optional_remove_original_gear, optional_s
             end
         end
 
-        -- Add all bundle items to preview character
-        for i, items in pairs(self._items) do
-            local item = items.item
-            local slot_name = item.slots[1]
-            self._mannequin_loadout[slot_name] = item
-            local gear_loadout = self._gear_loadout
-            if gear_loadout then
-                gear_loadout[slot_name] = item
+        if view_whole_bundle then
+            -- Add all bundle items to preview character
+            for i, items in pairs(self._items) do
+                local item = items.item
+                local slot_name = item.slots[1]
+                self._mannequin_loadout[slot_name] = item
+                local gear_loadout = self._gear_loadout
+                if gear_loadout then
+                    gear_loadout[slot_name] = item
+                end
+            end
+        else
+            local element = self._selected_element
+            for i, items in pairs(self._items) do
+                if items.offer.offerId == element.offer.offerId then
+                    local item = items.item
+                    local slot_name = item.slots[1]
+                    self._mannequin_loadout[slot_name] = item
+                    local gear_loadout = self._gear_loadout
+                    if gear_loadout then
+                        gear_loadout[slot_name] = item
+                    end
+                end
             end
         end
 
@@ -584,7 +612,7 @@ mod.cycle_preview_operative = function(self)
             end
 
             if found_new_profile then
-                mod.display_cosmetics(self, false, new_profile)
+                mod.display_cosmetics(self, hide_equipment, new_profile)
                 selected_profile = new_profile
             end
         end
@@ -734,4 +762,106 @@ StoreItemDetailView._should_show_inspect = function(self, element)
     local appropriate_list = multiple_items and _inspect_on_multiple or _inspect_on_single
 
     return table.array_contains(appropriate_list, item_type)
+end
+
+CosmeticsInspectView.toggle_equipment = function(self)
+    mod.toggle_equipment(self)
+end
+StoreItemDetailView.toggle_equipment = function(self)
+    mod.toggle_equipment(self)
+end
+
+mod.toggle_equipment = function(self)
+    hide_equipment = not hide_equipment
+    mod.display_cosmetics(self, hide_equipment)
+end
+
+CosmeticsInspectView.toggle_view_bundle = function(self)
+    mod.toggle_view_bundle(self)
+end
+StoreItemDetailView.toggle_view_bundle = function(self)
+    mod.toggle_view_bundle(self)
+end
+
+mod.toggle_view_bundle = function(self)
+    view_whole_bundle = not view_whole_bundle
+    mod.display_cosmetics(self, hide_equipment)
+end
+
+CosmeticsInspectView.show_toggle_equipment = function(self)
+    mod.show_toggle_equipment(self)
+end
+StoreItemDetailView.show_toggle_equipment = function(self)
+    mod.show_toggle_equipment(self)
+end
+mod.show_toggle_equipment = function(self, element)
+    local _inspect_on_multiple = {
+        "WEAPON_SKIN",
+        "GEAR_EXTRA_COSMETIC",
+        "GEAR_HEAD",
+        "GEAR_LOWERBODY",
+        "GEAR_UPPERBODY",
+    }
+    local _inspect_on_single = {
+        "WEAPON_SKIN",
+        "GEAR_EXTRA_COSMETIC",
+        "GEAR_HEAD",
+        "GEAR_LOWERBODY",
+        "GEAR_UPPERBODY",
+    }
+
+    local offer = element.offer
+    local is_bundle = not not offer.bundleInfo
+
+    if is_bundle then
+        return true
+    end
+
+    local item = element.item
+    local item_type = item and item.item_type
+
+    if not item_type then
+        return false
+    end
+
+    local multiple_items = #self._items > 1
+    local appropriate_list = multiple_items and _inspect_on_multiple or _inspect_on_single
+
+    return table.array_contains(appropriate_list, item_type)
+end
+
+CosmeticsInspectView.show_toggle_view_bundle = function(self)
+    mod.show_toggle_view_bundle(self)
+end
+StoreItemDetailView.show_toggle_view_bundle = function(self)
+    mod.show_toggle_view_bundle(self)
+end
+local parent_bundle_offer = {}
+mod.show_toggle_view_bundle = function(self, element)
+    local offer = element.offer
+    local is_bundle = not not offer.bundleInfo
+
+    if is_bundle then
+        parent_bundle_offer = offer
+        return false
+    else
+        if parent_bundle_offer then
+            local isInParentBundle
+            if parent_bundle_offer.bundleInfo then
+                for i = 1, #parent_bundle_offer.bundleInfo do
+                    if parent_bundle_offer.bundleInfo[i].offerId == offer.offerId then
+                        isInParentBundle = true
+                    end
+                end
+                if isInParentBundle then
+                    return true
+                else
+                    parent_bundle_offer = {}
+                end
+            else
+                parent_bundle_offer = {}
+            end
+        end
+        return false
+    end
 end

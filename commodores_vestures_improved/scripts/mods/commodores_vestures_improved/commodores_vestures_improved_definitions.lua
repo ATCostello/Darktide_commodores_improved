@@ -91,11 +91,29 @@ local legend_inputs = {
 	},
 	{
 		alignment = "right_alignment",
-		display_name = "loc_exit_to_main_menu_display_name",
+		display_name = "loc_CVI_swap_operative",
 		input_action = "cycle_chat_channel",
 		on_pressed_callback = "cycle_preview_operative",
 		visibility_function = function (parent, id)
 			return parent:has_multiple_operatives() and not parent._weapon_preview
+		end,
+	},
+	{
+		alignment = "right_alignment",
+		display_name = "loc_CVI_toggle_equipment",
+		input_action = "send_chat_message",
+		on_pressed_callback = "toggle_equipment",
+		visibility_function = function (parent, id)
+			return parent._valid_equipment and not parent._weapon_preview
+		end,
+	},
+	{
+		alignment = "right_alignment",
+		display_name = "loc_CVI_toggle_view_bundle",
+		input_action = "hotkey_toggle_item_tooltip",
+		on_pressed_callback = "toggle_view_bundle",
+		visibility_function = function (parent, id)
+			return parent._valid_bundle and not parent._weapon_preview
 		end,
 	}
 }
