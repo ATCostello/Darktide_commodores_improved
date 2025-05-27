@@ -5,10 +5,10 @@ mod:add_global_localize_strings({
 		en = "Change Operative"
 	},
 	loc_CVI_toggle_equipment = {
-		en = "Toggle Original Equipment"
+		en = "Toggle Equipment"
 	},
 	loc_CVI_toggle_view_bundle = {
-		en = "Toggle Whole Bundle View"
+		en = "Toggle Bundle View"
 	},
 	loc_CVI_currently_showing = {
 		en = "Currently showing on Operative:"

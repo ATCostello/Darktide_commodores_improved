@@ -48,6 +48,7 @@ end)
 
 mod:hook_safe(CLASS.CosmeticsInspectView, "on_enter", function(self)
     mod._refresh_profiles(self)
+    mod.show_on_character_by_default(self)
     if self._selected_slot then
         self.is_weapon_preview = true
         mod.display_cosmetics(self, hide_equipment)
@@ -78,6 +79,7 @@ mod:hook_require("scripts/ui/views/cosmetics_inspect_view/cosmetics_inspect_view
             1,
         }
     }
+
 end)
 
 CosmeticsInspectView._setup_item_description = function(self, description_text, restriction_text, property_text)
@@ -319,10 +321,8 @@ mod.display_cosmetics = function(self, optional_remove_original_gear, optional_s
         CosmeticsInspectView._start_preview_item(self)
     end
 
-    if not self.hide_character then
-        -- Show on operative not mannequin
-        mod.show_on_character_by_default(self)
-    end
+    -- Show on operative not mannequin
+    mod.show_on_character_by_default(self)
 end
 
 mod.show_on_character_by_default = function(self)
@@ -645,7 +645,7 @@ mod.has_multiple_operatives = function(self)
     if self._preview_player == false then
         return false
     end
-
+    
     local has_multiple_operatives_of_same_class = false
     local item
     if self._items then
