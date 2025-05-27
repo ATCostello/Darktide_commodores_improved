@@ -181,7 +181,6 @@ local legend_inputs_cosmetics_inspect_view = {
 		input_action = "hotkey_menu_special_2",
 		on_pressed_callback = "cb_on_camera_zoom_toggled",
 		visibility_function = function(parent, id)
-			if parent:_can_zoom() then
 				local display_name = parent._camera_zoomed_in and menu_zoom_out or menu_zoom_in
 
 				parent._input_legend_element:set_display_name(id, display_name)
@@ -192,9 +191,7 @@ local legend_inputs_cosmetics_inspect_view = {
 				end
 
 				return visible
-			end
 
-			return false
 		end,
 	},
 	{

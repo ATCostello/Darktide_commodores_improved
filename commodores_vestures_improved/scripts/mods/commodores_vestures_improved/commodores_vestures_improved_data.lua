@@ -1,7 +1,7 @@
 local mod = get_mod("commodores_vestures_improved")
 
 return {
-	name = "commodores_vestures_improved",
+	name = mod:localize("mod_name"),
 	description = mod:localize("mod_description"),
-	is_togglable = true,
+	is_togglable = false,
 }
