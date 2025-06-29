@@ -20,16 +20,48 @@ local UIProfileSpawner = require("scripts/managers/ui/ui_profile_spawner")
 local CosmeticsInspectViewDefinitions = require("scripts/ui/views/cosmetics_inspect_view/cosmetics_inspect_view_definitions")
 local UIWidgetGrid = require("scripts/ui/widget_logic/ui_widget_grid")
 local ViewElementInputLegend = require("scripts/ui/view_elements/view_element_input_legend/view_element_input_legend")
+local PlayerCharacterConstants = require("scripts/settings/player_character/player_character_constants")
 
 local selected_profile
 local hide_equipment = false
 local view_whole_bundle = true
+
+local available_companions = {
+    companion_dog = "slot_companion_gear_full"
+}
+local COMPANION_SLOTS_BY_BREED = {}
+local COMPANION_BREED_BY_SLOT = {}
+local COMPANION_SLOTS = {}
+
+for breed, main_slot in pairs(available_companions) do
+    local slot_depedencies = PlayerCharacterConstants.slot_configuration[main_slot].slot_dependencies
+
+    COMPANION_SLOTS_BY_BREED[breed] = {
+        [main_slot] = true
+    }
+    COMPANION_BREED_BY_SLOT[main_slot] = breed
+    COMPANION_SLOTS[main_slot] = true
+
+    if slot_depedencies then
+        for i = 1, #slot_depedencies do
+            local slot_depedency = slot_depedencies[i]
+
+            COMPANION_SLOTS_BY_BREED[breed] = {
+                [slot_depedency] = true
+            }
+            COMPANION_BREED_BY_SLOT[slot_depedency] = breed
+            COMPANION_SLOTS[slot_depedency] = true
+        end
+    end
+end
 
 -- Grab all account operatives on load
 mod:hook_safe(
     CLASS.StoreView, "on_enter", function(self)
         mod._refresh_profiles(self)
     end
+
+
 )
 
 -- Refresh widgets when "Show on operative" is toggled
@@ -39,12 +71,16 @@ mod:hook_safe(
             StoreItemDetailView._setup_side_panel(self)
         end
     end
+
+
 )
 
 mod:hook_safe(
     CLASS.PenanceOverviewView, "on_enter", function(self)
         mod._refresh_profiles(self)
     end
+
+
 )
 
 mod:hook_safe(
@@ -55,12 +91,16 @@ mod:hook_safe(
             mod.display_cosmetics(self, hide_equipment)
         end
     end
+
+
 )
 
 mod:hook_safe(
     CLASS.CosmeticsInspectView, "on_exit", function(self)
         self.is_weapon_preview = false
     end
+
+
 )
 
 mod:hook_require(
@@ -70,9 +110,22 @@ mod:hook_require(
         local grid_width = item_grid_width + grid_margin * 2
 
         instance.scenegraph_definition.side_panel_area = {
-            horizontal_alignment = "left", parent = "canvas", vertical_alignment = "bottom", size = {300, 0}, position = {grid_width + 100, -200, 1}
+            horizontal_alignment = "left",
+            parent = "canvas",
+            vertical_alignment = "bottom",
+            size = {
+                300,
+                0
+            },
+            position = {
+                grid_width + 100,
+                -200,
+                1
+            }
         }
     end
+
+
 )
 local Personalities = require("scripts/settings/character/personalities")
 local VoiceFxPresetSettings = require("scripts/settings/dialogue/voice_fx_preset_settings")
@@ -107,6 +160,7 @@ CosmeticsInspectView.cb_preview_voice = function(self)
     self._sound_event_id = WwiseWorld.trigger_resource_event(wwise_world, sound_event, source)
 end
 
+
 CosmeticsInspectView._setup_item_description = function(self, description_text, restriction_text, property_text)
     local widgets_by_name = self._widgets_by_name
     local description_background = widgets_by_name.description_background
@@ -127,24 +181,41 @@ CosmeticsInspectView._setup_item_description = function(self, description_text, 
     local max_width = self._ui_scenegraph.description_grid.size[1]
 
     local function _add_text_widget(pass_template, text)
-        local widget_definition = UIWidget.create_definition(pass_template, scenegraph_id, nil, {max_width, 0})
+        local widget_definition = UIWidget.create_definition(
+            pass_template, scenegraph_id, nil, {
+                max_width,
+                0
+            }
+        )
         local widget = self:_create_widget(string.format("description_grid_widget_%d", #widgets), widget_definition)
 
         widget.content.text = text
 
         local widget_text_style = widget.style.text
         local text_options = UIFonts.get_font_options_by_style(widget.style.text)
-        local _, text_height = self:_text_size(text, widget_text_style.font_type, widget_text_style.font_size, {max_width, math.huge}, text_options)
+        local _, text_height = self:_text_size(
+            text, widget_text_style.font_type, widget_text_style.font_size, {
+                max_width,
+                math.huge
+            }, text_options
+        )
 
         widget.content.size[2] = text_height
         widgets[#widgets + 1] = widget
         alignment_widgets[#alignment_widgets + 1] = widget
     end
 
+
     local function _add_spacing(height)
         widgets[#widgets + 1] = nil
-        alignment_widgets[#alignment_widgets + 1] = {size = {max_width, height}}
+        alignment_widgets[#alignment_widgets + 1] = {
+            size = {
+                max_width,
+                height
+            }
+        }
     end
+
 
     local desired_spacing = 50
 
@@ -204,13 +275,13 @@ CosmeticsInspectView._setup_item_description = function(self, description_text, 
 
     local grid_scenegraph_id = "description_grid"
     local grid_pivot_scenegraph_id = "description_content_pivot"
-    local grid_spacing = {0, 0}
+    local grid_spacing = {
+        0,
+        0
+    }
     local grid_direction = "down"
     local use_is_focused_for_navigation = true
-    local grid = UIWidgetGrid:new(
-                     self._description_grid_widgets, self._description_grid_alignment_widgets, self._ui_scenegraph, grid_scenegraph_id,
-                     grid_direction, grid_spacing, nil, use_is_focused_for_navigation
-                 )
+    local grid = UIWidgetGrid:new(self._description_grid_widgets, self._description_grid_alignment_widgets, self._ui_scenegraph, grid_scenegraph_id, grid_direction, grid_spacing, nil, use_is_focused_for_navigation)
 
     self._description_grid = grid
 
@@ -223,13 +294,13 @@ CosmeticsInspectView._setup_item_description = function(self, description_text, 
     description_background.content.visible = true
 end
 
+
 -- For singular store items
 mod:hook_safe(
     CLASS.StoreItemDetailView, "_present_item", function(self, item, visual_item)
         -- Do not display character if item is a weapon skin or trinket
         local item_type = item.item_type
-        local preview_on_player = item_type ~= "WEAPON_RANGED" and item_type ~= "WEAPON_MELEE" and item_type ~= "WEAPON_SKIN" and item_type ~=
-                                      "WEAPON_TRINKET"
+        local preview_on_player = item_type ~= "WEAPON_RANGED" and item_type ~= "WEAPON_MELEE" and item_type ~= "WEAPON_SKIN" and item_type ~= "WEAPON_TRINKET"
 
         local element = self._selected_element
         self._valid_bundle = mod.show_toggle_view_bundle(self, element)
@@ -240,6 +311,8 @@ mod:hook_safe(
         else
         end
     end
+
+
 )
 
 -- For item bundles
@@ -265,6 +338,8 @@ mod:hook_safe(
         local default_camera_settings = self._breeds_default_camera_settings[breed_name]
         self:_set_initial_viewport_camera_position(default_camera_settings)
     end
+
+
 )
 
 mod.display_cosmetics = function(self, optional_remove_original_gear, optional_specific_profile)
@@ -295,6 +370,7 @@ mod.display_cosmetics = function(self, optional_remove_original_gear, optional_s
                 self._gear_loadout["slot_gear_upperbody"] = nil
                 self._gear_loadout["slot_gear_lowerbody"] = nil
                 self._gear_loadout["slot_gear_head"] = nil
+
             end
         end
 
@@ -324,6 +400,9 @@ mod.display_cosmetics = function(self, optional_remove_original_gear, optional_s
             end
         end
 
+        -- temporarily remove doggo, so that they don't spawn in with character cosmetics.
+        self._gear_loadout["slot_companion_gear_full"] = nil
+
         StoreItemDetailView._setup_side_panel(self)
     elseif self.is_weapon_preview and not self._bundle_data then
         local slot_name = item.slots[1]
@@ -332,6 +411,7 @@ mod.display_cosmetics = function(self, optional_remove_original_gear, optional_s
         if gear_loadout then
             gear_loadout[slot_name] = item
         end
+
         CosmeticsInspectView._start_preview_item(self)
     end
 
@@ -340,6 +420,7 @@ mod.display_cosmetics = function(self, optional_remove_original_gear, optional_s
         mod.show_on_character_by_default(self)
     end
 end
+
 
 mod.show_on_character_by_default = function(self)
     if self._weapon_preview then
@@ -359,15 +440,14 @@ mod.show_on_character_by_default = function(self)
     end
 end
 
+
 -- override generate spawn profile to include account's other characters for previewing
 mod._generate_spawn_profile = function(self, item, optional_specific_profile)
     if item then
         local profile = StoreItemDetailView._generic_profile_from_item(self, item)
 
         self._preview_profile = profile
-
         self._mannequin_loadout = StoreItemDetailView._generate_mannequin_loadout(self, profile, item)
-
         self._default_mannequin_loadout = table.clone_instance(self._mannequin_loadout)
         self._mannequin_profile = table.clone_instance(profile)
         self._mannequin_profile.loadout = self._mannequin_loadout
@@ -407,6 +487,7 @@ mod._generate_spawn_profile = function(self, item, optional_specific_profile)
     end
 end
 
+
 mod._refresh_profiles = function(self)
     self._wait_for_character_profiles_refresh = true
 
@@ -416,12 +497,17 @@ mod._refresh_profiles = function(self)
             local profiles = profile_data.profiles
             current_profiles = profiles
         end
+
+
     ):catch(
         function()
             self._wait_for_character_profiles_refresh = false
         end
+
+
     )
 end
+
 
 -- Add buttons to swap preview characters
 CosmeticsInspectView._setup_input_legend = function(self)
@@ -443,18 +529,19 @@ CosmeticsInspectView._setup_input_legend = function(self)
         if valid then
             local on_pressed_callback = legend_input.on_pressed_callback and callback(self, legend_input.on_pressed_callback)
 
-            self._input_legend_element:add_entry(
-                legend_input.display_name, legend_input.input_action, legend_input.visibility_function, on_pressed_callback, legend_input.alignment
-            )
+            self._input_legend_element:add_entry(legend_input.display_name, legend_input.input_action, legend_input.visibility_function, on_pressed_callback, legend_input.alignment)
         end
     end
 end
 
+
 CosmeticsInspectView._setup_side_panel = function(self, element)
 end
 
+
 CosmeticsInspectView._destroy_side_panel = function(self)
 end
+
 
 mod.get_archetype_symbol = function(archetype)
     local archetype_symbol = ""
@@ -466,10 +553,13 @@ mod.get_archetype_symbol = function(archetype)
         archetype_symbol = ""
     elseif archetype.name == "ogryn" then
         archetype_symbol = ""
+    elseif archetype.name == "adamant" then
+        archetype_symbol = ""
     end
 
     return archetype_symbol
 end
+
 
 local bundle_restrictions = {}
 local len_bundle_restrictions = 0
@@ -485,7 +575,12 @@ StoreItemDetailView._setup_side_panel = function(self, element)
         self._side_panel_widgets = widgets
 
         local function _add_text_widget(pass_template, text)
-            local widget_definition = UIWidget.create_definition(pass_template, scenegraph_id, nil, {max_width, 0})
+            local widget_definition = UIWidget.create_definition(
+                pass_template, scenegraph_id, nil, {
+                    max_width,
+                    0
+                }
+            )
             local widget = self:_create_widget(string.format("side_panel_widget_%d", #widgets), widget_definition)
 
             widget.content.text = text
@@ -494,17 +589,22 @@ StoreItemDetailView._setup_side_panel = function(self, element)
             local widget_text_style = widget.style.text
             local text_options = UIFonts.get_font_options_by_style(widget.style.text)
             local _, text_height = self:_text_size(
-                                       text, widget_text_style.font_type, widget_text_style.font_size, {max_width, math.huge}, text_options
-                                   )
+                text, widget_text_style.font_type, widget_text_style.font_size, {
+                    max_width,
+                    math.huge
+                }, text_options
+            )
 
             y_offset = y_offset + text_height
             widget.content.size[2] = text_height
             widgets[#widgets + 1] = widget
         end
 
+
         local function _add_spacing(height)
             y_offset = y_offset + height
         end
+
 
         local item
 
@@ -518,8 +618,7 @@ StoreItemDetailView._setup_side_panel = function(self, element)
 
         local is_bundle = false
 
-        if element and element.sub_title and element.sub_title == "Bundle" or self._store_item and self._store_item.sub_title and
-            self._store_item.sub_title == "Bundle" then
+        if element and element.sub_title and element.sub_title == "Bundle" or self._store_item and self._store_item.sub_title and self._store_item.sub_title == "Bundle" then
             is_bundle = true
         end
 
@@ -688,6 +787,7 @@ StoreItemDetailView._setup_side_panel = function(self, element)
     end
 end
 
+
 -- Add buttons to swap preview characters
 StoreItemDetailView._setup_input_legend = function(self)
     self._input_legend_element = self:_add_element(ViewElementInputLegend, "input_legend", 10)
@@ -698,11 +798,10 @@ StoreItemDetailView._setup_input_legend = function(self)
         local legend_input = legend_inputs[i]
         local on_pressed_callback = legend_input.on_pressed_callback and callback(self, legend_input.on_pressed_callback)
 
-        self._input_legend_element:add_entry(
-            legend_input.display_name, legend_input.input_action, legend_input.visibility_function, on_pressed_callback, legend_input.alignment
-        )
+        self._input_legend_element:add_entry(legend_input.display_name, legend_input.input_action, legend_input.visibility_function, on_pressed_callback, legend_input.alignment)
     end
 end
+
 
 local current_profile_position = 0
 mod.cycle_preview_operative = function(self)
@@ -721,8 +820,7 @@ mod.cycle_preview_operative = function(self)
     local element = self._selected_element
     local is_bundle = false
 
-    if element and element.sub_title and element.sub_title == "Bundle" or self._store_item and self._store_item.sub_title and
-        self._store_item.sub_title == "Bundle" then
+    if element and element.sub_title and element.sub_title == "Bundle" or self._store_item and self._store_item.sub_title and self._store_item.sub_title == "Bundle" then
         is_bundle = true
     end
 
@@ -787,6 +885,7 @@ mod.cycle_preview_operative = function(self)
             return false
         end
 
+
         local allowed_profiles = {}
         if current_profiles then
             for i, profile in pairs(current_profiles) do
@@ -804,8 +903,7 @@ mod.cycle_preview_operative = function(self)
             end
 
             if allowed_profiles[current_profile_position] and current_profile then
-                if allowed_profiles[current_profile_position].name == current_profile.name and
-                    allowed_profiles[current_profile_position].archetype.name == current_profile.archetype.name then
+                if allowed_profiles[current_profile_position].name == current_profile.name and allowed_profiles[current_profile_position].archetype.name == current_profile.archetype.name then
                     if current_profile_position >= #allowed_profiles then
                         current_profile_position = 1
                     else
@@ -829,14 +927,17 @@ mod.cycle_preview_operative = function(self)
     end
 end
 
+
 StoreItemDetailView.cycle_preview_operative = function(self)
     mod.cycle_preview_operative(self)
 end
+
 
 CosmeticsInspectView.cycle_preview_operative = function(self)
     mod.cycle_preview_operative(self)
     CosmeticsInspectView._start_preview_item(self)
 end
+
 
 mod.has_multiple_operatives = function(self)
     if not current_profiles then
@@ -865,8 +966,7 @@ mod.has_multiple_operatives = function(self)
     local element = self._selected_element
     local is_bundle = false
 
-    if element and element.sub_title and element.sub_title == "Bundle" or self._store_item and self._store_item.sub_title and
-        self._store_item.sub_title == "Bundle" then
+    if element and element.sub_title and element.sub_title == "Bundle" or self._store_item and self._store_item.sub_title and self._store_item.sub_title == "Bundle" then
         is_bundle = true
     end
 
@@ -904,6 +1004,7 @@ mod.has_multiple_operatives = function(self)
                 end
                 return false
             end
+
 
             if allowed_archetypes then
                 if current_profiles then
@@ -948,6 +1049,7 @@ mod.has_multiple_operatives = function(self)
             return false
         end
 
+
         if allowed_archetypes then
             if current_profiles then
                 for i, profile in pairs(current_profiles) do
@@ -968,15 +1070,27 @@ mod.has_multiple_operatives = function(self)
     return has_multiple_operatives_of_same_class
 end
 
+
 StoreItemDetailView.has_multiple_operatives = function(self)
     self.is_weapon_preview = false
     return mod.has_multiple_operatives(self)
 end
 
+
 CosmeticsInspectView.has_multiple_operatives = function(self)
     self.is_weapon_preview = true
     return mod.has_multiple_operatives(self)
 end
+
+
+local ANIMATION_SLOTS_MAP = {
+    slot_animation_emote_1 = true,
+    slot_animation_emote_2 = true,
+    slot_animation_emote_3 = true,
+    slot_animation_emote_4 = true,
+    slot_animation_emote_5 = true,
+    slot_animation_end_of_round = true
+}
 
 CosmeticsInspectView._spawn_profile = function(self, profile, initial_rotation, disable_rotation_input)
     if profile then
@@ -997,6 +1111,7 @@ CosmeticsInspectView._spawn_profile = function(self, profile, initial_rotation, 
         end
 
         local camera_position = ScriptCamera.position(camera)
+
         local spawn_position = Unit.world_position(self._spawn_point_unit, 1)
         local spawn_rotation = Unit.world_rotation(self._spawn_point_unit, 1)
 
@@ -1011,12 +1126,40 @@ CosmeticsInspectView._spawn_profile = function(self, profile, initial_rotation, 
         self._profile_spawner:spawn_profile(profile, spawn_position, spawn_rotation)
 
         self._spawned_profile = profile
+
+        local selected_slot = self._selected_slot
+        local selected_slot_name = selected_slot and selected_slot.name
+
+        if selected_slot_name == "slot_companion_gear_full" then
+            self._profile_spawner:toggle_character(false)
+        elseif ANIMATION_SLOTS_MAP[selected_slot_name] then
+            local companion_state_machine = self._context
+            local item = self._preview_item
+            local toggle_companion = item and item.companion_state_machine ~= nil and item.companion_state_machine ~= ""
+
+            self._profile_spawner:toggle_companion(toggle_companion)
+        else
+            self._profile_spawner:toggle_companion(false)
+        end
     end
 end
 
+
 StoreItemDetailView._should_show_inspect = function(self, element)
-    local _inspect_on_multiple = {"WEAPON_SKIN", "GEAR_EXTRA_COSMETIC", "GEAR_HEAD", "GEAR_LOWERBODY", "GEAR_UPPERBODY"}
-    local _inspect_on_single = {"WEAPON_SKIN", "GEAR_EXTRA_COSMETIC", "GEAR_HEAD", "GEAR_LOWERBODY", "GEAR_UPPERBODY"}
+    local _inspect_on_multiple = {
+        "WEAPON_SKIN",
+        "GEAR_EXTRA_COSMETIC",
+        "GEAR_HEAD",
+        "GEAR_LOWERBODY",
+        "GEAR_UPPERBODY"
+    }
+    local _inspect_on_single = {
+        "WEAPON_SKIN",
+        "GEAR_EXTRA_COSMETIC",
+        "GEAR_HEAD",
+        "GEAR_LOWERBODY",
+        "GEAR_UPPERBODY"
+    }
 
     local offer = element.offer
     local is_bundle = not not offer.bundleInfo
@@ -1038,39 +1181,64 @@ StoreItemDetailView._should_show_inspect = function(self, element)
     return table.array_contains(appropriate_list, item_type)
 end
 
+
 CosmeticsInspectView.toggle_equipment = function(self)
     mod.toggle_equipment(self)
 end
+
+
 StoreItemDetailView.toggle_equipment = function(self)
     mod.toggle_equipment(self)
 end
+
 
 mod.toggle_equipment = function(self)
     hide_equipment = not hide_equipment
     mod.display_cosmetics(self, hide_equipment)
 end
 
+
 CosmeticsInspectView.toggle_view_bundle = function(self)
     mod.toggle_view_bundle(self)
 end
+
+
 StoreItemDetailView.toggle_view_bundle = function(self)
     mod.toggle_view_bundle(self)
 end
+
 
 mod.toggle_view_bundle = function(self)
     view_whole_bundle = not view_whole_bundle
     mod.display_cosmetics(self, hide_equipment)
 end
 
+
 CosmeticsInspectView.show_toggle_equipment = function(self)
     mod.show_toggle_equipment(self)
 end
+
+
 StoreItemDetailView.show_toggle_equipment = function(self)
     mod.show_toggle_equipment(self)
 end
+
+
 mod.show_toggle_equipment = function(self, element)
-    local _inspect_on_multiple = {"WEAPON_SKIN", "GEAR_EXTRA_COSMETIC", "GEAR_HEAD", "GEAR_LOWERBODY", "GEAR_UPPERBODY"}
-    local _inspect_on_single = {"WEAPON_SKIN", "GEAR_EXTRA_COSMETIC", "GEAR_HEAD", "GEAR_LOWERBODY", "GEAR_UPPERBODY"}
+    local _inspect_on_multiple = {
+        "WEAPON_SKIN",
+        "GEAR_EXTRA_COSMETIC",
+        "GEAR_HEAD",
+        "GEAR_LOWERBODY",
+        "GEAR_UPPERBODY"
+    }
+    local _inspect_on_single = {
+        "WEAPON_SKIN",
+        "GEAR_EXTRA_COSMETIC",
+        "GEAR_HEAD",
+        "GEAR_LOWERBODY",
+        "GEAR_UPPERBODY"
+    }
 
     local offer = element.offer
     local is_bundle = not not offer.bundleInfo
@@ -1092,12 +1260,17 @@ mod.show_toggle_equipment = function(self, element)
     return table.array_contains(appropriate_list, item_type)
 end
 
+
 CosmeticsInspectView.show_toggle_view_bundle = function(self)
     mod.show_toggle_view_bundle(self)
 end
+
+
 StoreItemDetailView.show_toggle_view_bundle = function(self)
     mod.show_toggle_view_bundle(self)
 end
+
+
 local parent_bundle_offer = {}
 mod.show_toggle_view_bundle = function(self, element)
     local offer = element.offer
@@ -1127,3 +1300,5 @@ mod.show_toggle_view_bundle = function(self, element)
         return false
     end
 end
+
+
