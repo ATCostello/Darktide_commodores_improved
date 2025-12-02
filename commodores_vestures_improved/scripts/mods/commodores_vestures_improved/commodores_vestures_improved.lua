@@ -63,21 +63,18 @@ end
 -- Grab all account operatives on load
 mod:hook_safe(CLASS.StoreView, "on_enter", function(self)
 	mod._refresh_profiles(self)
-end
-)
+end)
 
 -- Refresh widgets when "Show on operative" is toggled
 mod:hook_safe(CLASS.StoreItemDetailView, "cb_on_preview_with_gear_toggled", function(self)
 	if not self._weapon_preview then
 		StoreItemDetailView._setup_side_panel(self)
 	end
-end
-)
+end)
 
 mod:hook_safe(CLASS.PenanceOverviewView, "on_enter", function(self)
 	mod._refresh_profiles(self)
-end
-)
+end)
 
 mod:hook_safe(CLASS.CosmeticsInspectView, "on_enter", function(self)
 	mod._refresh_profiles(self)
@@ -85,13 +82,11 @@ mod:hook_safe(CLASS.CosmeticsInspectView, "on_enter", function(self)
 		self.is_weapon_preview = true
 		mod.display_cosmetics(self, hide_equipment)
 	end
-end
-)
+end)
 
 mod:hook_safe(CLASS.CosmeticsInspectView, "on_exit", function(self)
 	self.is_weapon_preview = false
-end
-)
+end)
 
 mod:hook_require("scripts/ui/views/cosmetics_inspect_view/cosmetics_inspect_view_definitions", function(instance)
 	local grid_margin = 30
@@ -112,13 +107,15 @@ mod:hook_require("scripts/ui/views/cosmetics_inspect_view/cosmetics_inspect_view
 			1,
 		},
 	}
-end
-)
+end)
 local Personalities = require("scripts/settings/character/personalities")
 local VoiceFxPresetSettings = require("scripts/settings/dialogue/voice_fx_preset_settings")
 
+--[[
 CosmeticsInspectView.cb_preview_voice = function(self)
 	local voice_fx_preset_key = self._preview_item.__master_item.voice_fx_preset
+
+
 	local voice_fx_preset_rtcp = VoiceFxPresetSettings[voice_fx_preset_key]
 	if not voice_fx_preset_key then
 		return
@@ -145,7 +142,7 @@ CosmeticsInspectView.cb_preview_voice = function(self)
 	WwiseWorld.set_source_parameter(wwise_world, source, "voice_fx_preset", voice_fx_preset_rtcp)
 
 	self._sound_event_id = WwiseWorld.trigger_resource_event(wwise_world, sound_event, source)
-end
+end]]
 
 CosmeticsInspectView._setup_item_description = function(self, description_text, restriction_text, property_text)
 	local widgets_by_name = self._widgets_by_name
@@ -176,10 +173,9 @@ CosmeticsInspectView._setup_item_description = function(self, description_text, 
 		widget.content.text = text
 
 		local widget_text_style = widget.style.text
-
 		local _, text_height = self:_text_size(text, widget_text_style, {
 			max_width,
-			1080,
+			math.huge,
 		})
 
 		widget.content.size[2] = text_height
@@ -309,8 +305,7 @@ mod:hook_safe(CLASS.StoreItemDetailView, "_present_item", function(self, item, v
 		mod.display_cosmetics(self, hide_equipment)
 	else
 	end
-end
-)
+end)
 
 -- For item bundles
 mod:hook_safe(CLASS.StoreItemDetailView, "_present_bundle", function(self)
@@ -333,8 +328,7 @@ mod:hook_safe(CLASS.StoreItemDetailView, "_present_bundle", function(self)
 	local breed_name = self._presentation_profile and self._presentation_profile.archetype.breed or "human"
 	local default_camera_settings = self._breeds_default_camera_settings[breed_name]
 	self:_set_initial_viewport_camera_position(default_camera_settings)
-end
-)
+end)
 
 mod.display_cosmetics = function(self, optional_remove_original_gear, optional_specific_profile)
 	-- Display items
@@ -487,12 +481,10 @@ mod._refresh_profiles = function(self)
 			self._wait_for_character_profiles_refresh = false
 			local profiles = profile_data.profiles
 			current_profiles = profiles
-		end
-)
+		end)
 		:catch(function()
 			self._wait_for_character_profiles_refresh = false
-		end
-)
+		end)
 end
 
 -- Add buttons to swap preview characters
@@ -576,7 +568,7 @@ StoreItemDetailView._setup_side_panel = function(self, element)
 			local widget_text_style = widget.style.text
 			local _, text_height = self:_text_size(text, widget_text_style, {
 				max_width,
-				1080,
+				math.huge,
 			})
 
 			y_offset = y_offset + text_height
@@ -1102,58 +1094,6 @@ local ANIMATION_SLOTS_MAP = {
 	slot_animation_emote_5 = true,
 	slot_animation_end_of_round = true,
 }
-
-CosmeticsInspectView._spawn_profile = function(self, profile, initial_rotation, disable_rotation_input)
-	if profile then
-		if self._profile_spawner then
-			self._profile_spawner:destroy()
-
-			self._profile_spawner = nil
-		end
-
-		local world = self._world_spawner:world()
-		local camera = self._world_spawner:camera()
-		local unit_spawner = self._world_spawner:unit_spawner()
-
-		self._profile_spawner = UIProfileSpawner:new("CosmeticsInspectView", world, camera, unit_spawner)
-
-		if disable_rotation_input then
-			self._profile_spawner:disable_rotation_input()
-		end
-
-		local camera_position = ScriptCamera.position(camera)
-
-		local spawn_position = Unit.world_position(self._spawn_point_unit, 1)
-		local spawn_rotation = Unit.world_rotation(self._spawn_point_unit, 1)
-
-		if initial_rotation then
-			local character_initial_rotation = Quaternion.axis_angle(Vector3(0, 0, 1), initial_rotation)
-
-			spawn_rotation = Quaternion.multiply(character_initial_rotation, spawn_rotation)
-		end
-
-		camera_position.z = 0
-
-		self._profile_spawner:spawn_profile(profile, spawn_position, spawn_rotation)
-
-		self._spawned_profile = profile
-
-		local selected_slot = self._selected_slot
-		local selected_slot_name = selected_slot and selected_slot.name
-
-		if selected_slot_name == "slot_companion_gear_full" then
-			self._profile_spawner:toggle_character(false)
-		elseif ANIMATION_SLOTS_MAP[selected_slot_name] then
-			local companion_state_machine = self._context
-			local item = self._preview_item
-			local toggle_companion = item and item.companion_state_machine ~= nil and item.companion_state_machine ~= ""
-
-			self._profile_spawner:toggle_companion(toggle_companion)
-		else
-			self._profile_spawner:toggle_companion(false)
-		end
-	end
-end
 
 StoreItemDetailView._should_show_inspect = function(self, element)
 	local _inspect_on_multiple = {
