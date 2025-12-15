@@ -302,7 +302,7 @@ mod:hook_safe(CLASS.StoreItemDetailView, "_present_item", function(self, item, v
 	self._valid_equipment = mod.show_toggle_equipment(self, element)
 
 	if preview_on_player then
-		mod.display_cosmetics(self, hide_equipment)
+		mod.display_cosmetics(self, hide_equipment, nil, visual_item.__master_item)
 	else
 	end
 end)
@@ -312,11 +312,11 @@ mod:hook_safe(CLASS.StoreItemDetailView, "_present_bundle", function(self)
 	-- Remove artwork image from bundle
 	local widgets_by_name = self._widgets_by_name
 	local bundle_background_widget = widgets_by_name.bundle_background
-	local bundle_image = self._bundle_image
+	bundle_background_widget.style.bundle.material_values.texture_map = nil
 
-	if bundle_image then
-		bundle_background_widget.style.bundle.material_values.texture_map = nil
-	end
+	-- hide png overlay of bundle character, so you can see on your actual characters...
+	widgets_by_name.bundle_background.visible = false
+
 	view_whole_bundle = true
 	mod.display_cosmetics(self, hide_equipment)
 
@@ -330,11 +330,14 @@ mod:hook_safe(CLASS.StoreItemDetailView, "_present_bundle", function(self)
 	self:_set_initial_viewport_camera_position(default_camera_settings)
 end)
 
-mod.display_cosmetics = function(self, optional_remove_original_gear, optional_specific_profile)
+mod.display_cosmetics = function(self, optional_remove_original_gear, optional_specific_profile, optional_item)
 	-- Display items
 	local item
 
-	if self._items then
+	-- use passed item if present
+	if optional_item then
+		item = optional_item
+	elseif self._items then
 		if self._items[1].item and self._items[1].item.__master_item then
 			item = self._items[1].item.__master_item
 		elseif self._items[1].item then
@@ -362,14 +365,23 @@ mod.display_cosmetics = function(self, optional_remove_original_gear, optional_s
 		end
 
 		if view_whole_bundle then
-			-- Add all bundle items to preview character
-			for i, items in pairs(self._items) do
-				local item = items.item
+			if optional_item then
 				local slot_name = item.slots[1]
 				self._mannequin_loadout[slot_name] = item
 				local gear_loadout = self._gear_loadout
 				if gear_loadout then
 					gear_loadout[slot_name] = item
+				end
+			else
+				-- Add all bundle items to preview character
+				for i, items in pairs(self._items) do
+					local item = items.item
+					local slot_name = item.slots[1]
+					self._mannequin_loadout[slot_name] = item
+					local gear_loadout = self._gear_loadout
+					if gear_loadout then
+						gear_loadout[slot_name] = item
+					end
 				end
 			end
 		else
