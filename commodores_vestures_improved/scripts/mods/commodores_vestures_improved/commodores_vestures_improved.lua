@@ -1,7 +1,3 @@
---[[
-    Name: Show premium cosmetics on operatives
-    Author: Alfthebigheaded
-]]
 local mod = get_mod("commodores_vestures_improved")
 
 local Definitions = mod:io_dofile(
