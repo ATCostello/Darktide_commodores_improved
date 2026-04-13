@@ -1,5 +1,5 @@
 local mod = get_mod("commodores_vestures_improved")
-mod.version = "1.6.03"
+mod.version = "1.6.04"
 mod:info("Commodore's Vestures Improved is installed, using version: " .. tostring(mod.version))
 
 local colours = {
@@ -9,6 +9,7 @@ local colours = {
 }
 
 mod:add_global_localize_strings({
+
 	loc_CVI_swap_operative = {
 		en = "Change Operative",
 		ru = "Сменить оперативника",
@@ -56,7 +57,7 @@ mod:add_global_localize_strings({
 	},
 })
 
-return {
+mod.localisation = {
 	mod_description = {
 		en = "{#color("
 			.. colours.text
@@ -87,6 +88,23 @@ return {
 		ru = "Улучшенные «Одеяния от Командора»",
 		["zh-cn"] = "准将的服装改进",
 	},
+	mod_name_boring = {
+		en = "Commodore's Vestures Improved",
+	},
+	mod_name_pizazz = {
+		en = "{#color("
+			.. colours.title
+			.. ")} "
+			.. "{#color(223,39,255)}C{#color(224,42,246)}o{#color(225,46,238)}m{#color(226,50,229)}m{#color(227,54,221)}o{#color(229,58,213)}d{#color(230,62,204)}o{#color(231,66,196)}r{#color(232,70,188)}e{#color(234,74,179)}'{#color(235,78,171)}s {#color(236,82,163)}V{#color(237,86,154)}e{#color(239,90,146)}s{#color(240,93,138)}t{#color(241,97,129)}u{#color(242,101,121)}r{#color(243,105,113)}e{#color(245,109,104)}s {#color(246,113,96)}I{#color(247,117,88)}m{#color(248,121,79)}p{#color(250,125,71)}r{#color(251,129,63)}o{#color(252,133,54)}v{#color(253,137,46)}e{#color(255,141,38)}d{#reset()}",
+		ru = "Улучшенные «Одеяния от Командора»",
+		["zh-cn"] = "准将的服装改进",
+	},
+	mod_name_pizazz_toggle = {
+		en = "Enable Name Pizazz",
+	},
+	mod_name_pizazz_tooltip = {
+		en = "Toggles the rainbow colours effect on the mod name text. Requires a reload.\nIf enabled, you will get a small euphoric experience everytime you scroll through the mod menu, \nIf disabled - you will be a John Darktide and have no rainbow sprinkles (but I'll love you anyway).",
+	},
 	general_settings = {
 		en = "{#color(" .. colours.title .. ")}General Settings{#reset()}",
 	},
@@ -97,3 +115,21 @@ return {
 		en = "A placeholder entry to initialise the mod menu, does not do anything yet.\nMore features may be added at some point.",
 	},
 }
+
+mod.toggle_pizazz = function()
+	for key, values in pairs(mod.localisation) do
+		if key == "mod_name" then
+			for language, text in pairs(values) do
+				if mod:get("mod_name_pizazz_toggle") then
+					mod.localisation[key][language] = mod.localisation["mod_name_pizazz"][language]
+				else
+					mod.localisation[key][language] = mod.localisation["mod_name_boring"][language]
+				end
+			end
+		end
+	end
+end
+
+mod.toggle_pizazz()
+
+return mod.localisation
