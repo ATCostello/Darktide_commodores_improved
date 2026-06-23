@@ -1,5 +1,5 @@
 local mod = get_mod("commodores_vestures_improved")
-mod.version = "1.6.05"
+mod.version = "1.6.06"
 mod:info("Commodore's Vestures Improved is installed, using version: " .. tostring(mod.version))
 
 local colours = {

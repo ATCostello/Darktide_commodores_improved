@@ -546,7 +546,7 @@ mod.get_archetype_symbol = function(archetype)
 	elseif archetype.name == "broker" then
 		archetype_symbol = ""
 	elseif archetype.name == "cryptic" then
-		archetype_symbol = "x"
+		archetype_symbol = ""
 	end
 
 	return archetype_symbol
