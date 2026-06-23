@@ -322,7 +322,7 @@ mod:hook_safe(CLASS.StoreItemDetailView, "_present_bundle", function(self)
 
 	-- change camera to full body view
 	local breed_name = self._presentation_profile and self._presentation_profile.archetype.breed or "human"
-	local default_camera_settings = self._breeds_default_camera_settings[breed_name]
+	local default_camera_settings = self:_default_camera_settings()
 	self:_set_initial_viewport_camera_position(default_camera_settings)
 end)
 
@@ -545,6 +545,8 @@ mod.get_archetype_symbol = function(archetype)
 		archetype_symbol = ""
 	elseif archetype.name == "broker" then
 		archetype_symbol = ""
+	elseif archetype.name == "cryptic" then
+		archetype_symbol = "x"
 	end
 
 	return archetype_symbol
