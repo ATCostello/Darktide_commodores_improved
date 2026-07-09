@@ -614,6 +614,7 @@ StoreItemDetailView._setup_side_panel = function(self, element)
 			local restrictions_text
 			local present_restrictions
 			local hide_restrictions = false
+
 			-- Go through bundle items, and get the restrictions
 			for _, item_data in pairs(self._items) do
 				item = item_data.item
@@ -629,21 +630,31 @@ StoreItemDetailView._setup_side_panel = function(self, element)
 					local item_type
 					if item.__master_item then
 						item_type = item.__master_item.item_type
-					elseif item then
+					elseif item and item.slot_weapon_skin and item.slot_weapon_skin.__master_item then
 						item_type = item.slot_weapon_skin.__master_item.item_type
 						hide_restrictions = true
+					else
+						local real_item = item_data.real_item
+						if real_item and real_item.__master_item and real_item.__master_item.item_type then
+							item_type = real_item.__master_item.item_type
+						end
 					end
 
-					if item_type == "GEAR_HEAD" then
-						slot_list[#slot_list + 1] = Localize("slot_head")
-					elseif item_type == "GEAR_LOWERBODY" then
-						slot_list[#slot_list + 1] = Localize("slot_legs")
-					elseif item_type == "GEAR_UPPERBODY" then
-						slot_list[#slot_list + 1] = Localize("slot_body")
-					elseif item_type == "WEAPON_SKIN" then
-						slot_list[#slot_list + 1] = Localize("slot_weapon")
-					elseif item_type == "GEAR_EXTRA_COSMETIC" then
-						slot_list[#slot_list + 1] = Localize("slot_extra")
+					if item_type then
+						if item_type == "GEAR_HEAD" then
+							slot_list[#slot_list + 1] = Localize("slot_head")
+						elseif item_type == "GEAR_LOWERBODY" then
+							slot_list[#slot_list + 1] = Localize("slot_legs")
+						elseif item_type == "GEAR_UPPERBODY" then
+							slot_list[#slot_list + 1] = Localize("slot_body")
+						elseif item_type == "WEAPON_SKIN" then
+							slot_list[#slot_list + 1] = Localize("slot_weapon")
+						elseif item_type == "GEAR_EXTRA_COSMETIC" then
+							slot_list[#slot_list + 1] = Localize("slot_extra")
+						elseif item_type == "WEAPON_TRINKET" then
+							slot_list[#slot_list + 1] = Localize("slot_weapon_trinket")
+							hide_restrictions = true
+						end
 					end
 					bundle_restrictions[restrictions_text] = slot_list
 				end
@@ -797,7 +808,7 @@ end
 -- Add buttons to swap preview characters
 StoreItemDetailView._setup_input_legend = function(self)
 	self._input_legend_element = self:_add_element(ViewElementInputLegend, "input_legend", 10)
-
+	dbg_s = self
 	local legend_inputs = Definitions.legend_inputs
 
 	for i = 1, #legend_inputs do
@@ -967,11 +978,18 @@ mod.has_multiple_operatives = function(self)
 			item = self._items[1].item.__master_item
 		elseif self._items[1].item then
 			item = self._items[1].item
+		elseif self._items[1].real_item and self._items[1].real_item.__master_item then
+			item = self._items[1].real_item.__master_item
 		end
 	elseif self._context and self._context.preview_item then
 		item = self._context.preview_item
 	elseif self._preview_item then
 		item = self._preview_item
+	end
+
+	-- Early return if item is a weapon trinket (not shown on characters)
+	if item and item.item_type == "weapon_trinket" then
+		return false
 	end
 
 	-- disable swapping operatives on bundles with different item restrictions
@@ -998,7 +1016,7 @@ mod.has_multiple_operatives = function(self)
 				end
 			end
 
-			if all_contain then
+			if all_contain and item.archetypes then
 				for i, class in pairs(item.archetypes) do
 					if string.find(rest1:lower(), class:lower()) then
 						common_class[1] = class

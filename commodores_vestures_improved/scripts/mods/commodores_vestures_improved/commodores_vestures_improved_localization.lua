@@ -1,5 +1,5 @@
 local mod = get_mod("commodores_vestures_improved")
-mod.version = "1.6.06"
+mod.version = "1.6.07"
 mod:info("Commodore's Vestures Improved is installed, using version: " .. tostring(mod.version))
 
 local colours = {
@@ -54,6 +54,9 @@ mod:add_global_localize_strings({
 		en = "Weapon",
 		ru = "Оружие",
 		["zh-cn"] = "武器",
+	},
+	slot_weapon_trinket = {
+		en = "Weapon Trinket",
 	},
 })
 
