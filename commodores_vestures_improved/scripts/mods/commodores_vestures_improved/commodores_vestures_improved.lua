@@ -437,15 +437,16 @@ end
 -- override generate spawn profile to include account's other characters for previewing
 mod._generate_spawn_profile = function(self, item, optional_specific_profile)
 	if item then
-		local profile = StoreItemDetailView._generic_profile_from_item(self, item)
+		local player = self:_player()
+		local base_profile = self._preview_profile or player:profile()
+		local profile = StoreItemDetailView._generate_mannequin_profile(self, base_profile, item)
 
 		self._preview_profile = profile
-		self._mannequin_loadout = StoreItemDetailView._generate_mannequin_loadout(self, profile, item)
+		self._mannequin_loadout = profile.loadout
 		self._default_mannequin_loadout = table.clone_instance(self._mannequin_loadout)
 		self._mannequin_profile = table.clone_instance(profile)
 		self._mannequin_profile.loadout = self._mannequin_loadout
 
-		local player = self:_player()
 		local player_profile = player:profile()
 
 		if optional_specific_profile then
@@ -850,14 +851,29 @@ mod.cycle_preview_operative = function(self)
 		is_bundle = true
 	end
 
+	local item
+	if self._items then
+		if self._items[1].item and self._items[1].item.__master_item then
+			item = self._items[1].item.__master_item
+		elseif self._items[1].item then
+			item = self._items[1].item
+		elseif self._items[1].real_item and self._items[1].real_item.__master_item then
+			item = self._items[1].real_item.__master_item
+		end
+	elseif self._context and self._context.preview_item then
+		item = self._context.preview_item
+	elseif self._preview_item then
+		item = self._preview_item
+	end
+
 	-- set allowed characters for entire bundle (only characters that ALL items in the bundle can be shown on)
-	if is_bundle and self._items then
+	if is_bundle and item then
 		local temp_arch
-		if self._items then
-			if self._items[1].item and self._items[1].item.__master_item then
-				temp_arch = self._items[1].item.__master_item.archetypes
-			elseif self._items[1].item then
-				temp_arch = self._items[1].item.archetypes
+		if item then
+			if item and item.__master_item then
+				temp_arch = item.__master_item.archetypes
+			elseif item then
+				temp_arch = item.archetypes
 			end
 		elseif self._context and self._context.preview_item then
 			temp_arch = self._context.preview_item.archetypes
@@ -883,16 +899,16 @@ mod.cycle_preview_operative = function(self)
 				end
 			end
 
-			allowed_archetypes = common_class
+			allowed_archetypes = temp_arch
 		end
 	end
 
 	if not is_bundle then
-		if self._items then
-			if self._items[1].item and self._items[1].item.__master_item then
-				allowed_archetypes = self._items[1].item.__master_item.archetypes
-			elseif self._items[1].item then
-				allowed_archetypes = self._items[1].item.archetypes
+		if item then
+			if item.__master_item then
+				allowed_archetypes = item.__master_item.archetypes
+			elseif item then
+				allowed_archetypes = item.archetypes
 			end
 		elseif self._context and self._context.preview_item then
 			allowed_archetypes = self._context.preview_item.archetypes
@@ -1026,7 +1042,7 @@ mod.has_multiple_operatives = function(self)
 		end
 
 		if item then
-			local allowed_archetypes = common_class
+			local allowed_archetypes = item.archetypes
 			local allowed_characters = {}
 
 			local find_in_table = function(search, table)
