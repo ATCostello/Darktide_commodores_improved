@@ -1,5 +1,5 @@
 local mod = get_mod("commodores_vestures_improved")
-mod.version = "1.6.08"
+mod.version = "1.6.09"
 mod:info("Commodore's Vestures Improved is installed, using version: " .. tostring(mod.version))
 
 local colours = {
@@ -60,6 +60,52 @@ mod:add_global_localize_strings({
 	},
 })
 
+local function lerp(a, b, t)
+	return a + (b - a) * t
+end
+
+mod.gradientText = function(text, startColor, endColor, colorSpaces)
+	local result = ""
+	local length = #text
+	local visibleIndex = 0
+
+	-- Count visible characters
+	for i = 1, length do
+		local char = text:sub(i, i)
+		if colorSpaces or char ~= " " then
+			visibleIndex = visibleIndex + 1
+		end
+	end
+
+	local currentIndex = 0
+
+	for i = 1, length do
+		local char = text:sub(i, i)
+
+		if not colorSpaces and char == " " then
+			result = result .. char
+		else
+			currentIndex = currentIndex + 1
+			local t = (visibleIndex <= 1) and 0 or (currentIndex - 1) / (visibleIndex - 1)
+
+			local r = math.floor(lerp(startColor[1], endColor[1], t))
+			local g = math.floor(lerp(startColor[2], endColor[2], t))
+			local b = math.floor(lerp(startColor[3], endColor[3], t))
+
+			result = result .. string.format("{#color(%d,%d,%d)}%s", r, g, b, char)
+		end
+	end
+
+	result = "{#color(" .. colours.title .. ")} " .. result .. "{#reset()}"
+	return result
+end
+
+local mod_name = {
+	en = "Commodore's Vestures Improved",
+	ru = "Улучшенные «Одеяния от Командора»",
+	["zh-cn"] = "准将的服装改进",
+}
+
 mod.localisation = {
 	mod_description = {
 		en = "{#color("
@@ -84,23 +130,19 @@ mod.localisation = {
 		["zh-cn"] = "为「准将的服装」提供一系列QOL（生活质量）功能。包含预览同捆包及直接在角色身上展示物品，且无须以正确的职业重新进入商店。",
 	},
 	mod_name = {
-		en = "{#color("
-			.. colours.title
-			.. ")} "
-			.. "{#color(223,39,255)}C{#color(224,42,246)}o{#color(225,46,238)}m{#color(226,50,229)}m{#color(227,54,221)}o{#color(229,58,213)}d{#color(230,62,204)}o{#color(231,66,196)}r{#color(232,70,188)}e{#color(234,74,179)}'{#color(235,78,171)}s {#color(236,82,163)}V{#color(237,86,154)}e{#color(239,90,146)}s{#color(240,93,138)}t{#color(241,97,129)}u{#color(242,101,121)}r{#color(243,105,113)}e{#color(245,109,104)}s {#color(246,113,96)}I{#color(247,117,88)}m{#color(248,121,79)}p{#color(250,125,71)}r{#color(251,129,63)}o{#color(252,133,54)}v{#color(253,137,46)}e{#color(255,141,38)}d{#reset()}",
-		ru = "Улучшенные «Одеяния от Командора»",
-		["zh-cn"] = "准将的服装改进",
-	},
-	mod_name_boring = {
-		en = "Commodore's Vestures Improved",
+		en = mod_name["en"],
+		ru = mod_name["ru"],
+		["zh-cn"] = mod_name["zh-cn"],
 	},
 	mod_name_pizazz = {
-		en = "{#color("
-			.. colours.title
-			.. ")} "
-			.. "{#color(223,39,255)}C{#color(224,42,246)}o{#color(225,46,238)}m{#color(226,50,229)}m{#color(227,54,221)}o{#color(229,58,213)}d{#color(230,62,204)}o{#color(231,66,196)}r{#color(232,70,188)}e{#color(234,74,179)}'{#color(235,78,171)}s {#color(236,82,163)}V{#color(237,86,154)}e{#color(239,90,146)}s{#color(240,93,138)}t{#color(241,97,129)}u{#color(242,101,121)}r{#color(243,105,113)}e{#color(245,109,104)}s {#color(246,113,96)}I{#color(247,117,88)}m{#color(248,121,79)}p{#color(250,125,71)}r{#color(251,129,63)}o{#color(252,133,54)}v{#color(253,137,46)}e{#color(255,141,38)}d{#reset()}",
-		ru = "Улучшенные «Одеяния от Командора»",
-		["zh-cn"] = "准将的服装改进",
+		en = mod.gradientText(mod_name["en"], { 223, 39, 255 }, { 255, 141, 38 }, true),
+		ru = mod.gradientText(mod_name["ru"], { 223, 39, 255 }, { 255, 141, 38 }, true),
+		["zh-cn"] = mod.gradientText(mod_name["zh-cn"], { 223, 39, 255 }, { 255, 141, 38 }, true),
+	},
+	mod_name_boring = {
+		en = mod_name["en"],
+		ru = mod_name["ru"],
+		["zh-cn"] = mod_name["zh-cn"],
 	},
 	mod_name_pizazz_toggle = {
 		en = "Enable Name Pizazz",
