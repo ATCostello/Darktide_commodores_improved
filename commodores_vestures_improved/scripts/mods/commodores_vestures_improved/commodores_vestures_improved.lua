@@ -15,6 +15,7 @@ local UIRenderer = require("scripts/managers/ui/ui_renderer")
 local ScriptWorld = require("scripts/foundation/utilities/script_world")
 local current_profiles = nil
 local ItemUtils = require("scripts/utilities/items")
+local ProfileUtils = require("scripts/utilities/profile_utils")
 local ScriptCamera = require("scripts/foundation/utilities/script_camera")
 local UIProfileSpawner = require("scripts/managers/ui/ui_profile_spawner")
 local CosmeticsInspectViewDefinitions =
@@ -439,7 +440,7 @@ mod._generate_spawn_profile = function(self, item, optional_specific_profile)
 	if item then
 		local player = self:_player()
 		local base_profile = self._preview_profile or player:profile()
-		local profile = StoreItemDetailView._generate_mannequin_profile(self, base_profile, item)
+		local profile = ProfileUtils.create_mannequin_profile(item, base_profile)
 
 		self._preview_profile = profile
 		self._mannequin_loadout = profile.loadout
