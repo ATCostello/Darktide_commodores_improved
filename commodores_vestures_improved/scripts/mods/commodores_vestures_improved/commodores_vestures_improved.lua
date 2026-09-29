@@ -435,6 +435,36 @@ mod.show_on_character_by_default = function(self)
 	end
 end
 
+-- find the account profile matching an operative, by character id
+mod.find_profile_by_character_id = function(profiles, profile)
+	if not profiles or not profile or not profile.character_id then
+		return nil
+	end
+
+	for i = 1, #profiles do
+		if profiles[i].character_id == profile.character_id then
+			return profiles[i]
+		end
+	end
+
+	return nil
+end
+
+-- find the first account profile of the given archetype
+mod.find_profile_by_archetype = function(profiles, archetype_name)
+	if not profiles or not archetype_name then
+		return nil
+	end
+
+	for i = 1, #profiles do
+		if profiles[i].archetype and profiles[i].archetype.name == archetype_name then
+			return profiles[i]
+		end
+	end
+
+	return nil
+end
+
 -- override generate spawn profile to include account's other characters for previewing
 mod._generate_spawn_profile = function(self, item, optional_specific_profile)
 	if item then
@@ -448,15 +478,20 @@ mod._generate_spawn_profile = function(self, item, optional_specific_profile)
 		self._mannequin_profile = table.clone_instance(profile)
 		self._mannequin_profile.loadout = self._mannequin_loadout
 
-		local player_profile = player:profile()
+		local player_profile = optional_specific_profile
 
-		if optional_specific_profile then
-			player_profile = optional_specific_profile
-		elseif current_profiles then
-			for i, operator in pairs(current_profiles) do
-				if operator.archetype.name == profile.archetype.name then
-					player_profile = operator
-				end
+		if not player_profile then
+			-- Always start on the operative the player currently has selected, so both the
+			-- preview and the operative cycle begin on the character being played
+			local played_profile = player:profile()
+
+			player_profile = mod.find_profile_by_character_id(current_profiles, played_profile) or played_profile
+
+			if not player_profile.archetype or player_profile.archetype.name ~= profile.archetype.name then
+				-- Item can't be shown on the selected operative, fall back to the first
+				-- account operative of the archetype the item requires
+				player_profile = mod.find_profile_by_archetype(current_profiles, profile.archetype.name)
+					or played_profile
 			end
 		end
 
@@ -828,11 +863,10 @@ StoreItemDetailView._setup_input_legend = function(self)
 	end
 end
 
-local current_profile_position = 0
 mod.cycle_preview_operative = function(self)
 	local current_profile = self._presentation_profile
 	local class_name = self._presentation_profile and self._presentation_profile.archetype.name
-	local found_new_profile = false
+	local current_profile_position = 0
 	local new_profile
 
 	if not current_profiles then
@@ -936,32 +970,30 @@ mod.cycle_preview_operative = function(self)
 		end
 
 		if allowed_profiles then
+			-- Resume the cycle from whichever operative is currently being shown, so the
+			-- first press always advances from the operative the player has selected
+			if current_profile and current_profile.archetype then
+				for i = 1, #allowed_profiles do
+					if
+						allowed_profiles[i].name == current_profile.name
+						and allowed_profiles[i].archetype.name == current_profile.archetype.name
+					then
+						current_profile_position = i
+						break
+					end
+				end
+			end
+
 			if current_profile_position >= #allowed_profiles then
 				current_profile_position = 1
 			else
 				current_profile_position = current_profile_position + 1
 			end
 
-			if allowed_profiles[current_profile_position] and current_profile then
-				if
-					allowed_profiles[current_profile_position].name == current_profile.name
-					and allowed_profiles[current_profile_position].archetype.name == current_profile.archetype.name
-				then
-					if current_profile_position >= #allowed_profiles then
-						current_profile_position = 1
-					else
-						current_profile_position = current_profile_position + 1
-					end
-				end
+			-- find profile in list
+			new_profile = allowed_profiles[current_profile_position]
 
-				-- find profile in list
-				if not found_new_profile then
-					new_profile = allowed_profiles[current_profile_position]
-					found_new_profile = true
-				end
-			end
-
-			if found_new_profile then
+			if new_profile then
 				self._preview_profile = new_profile
 				mod.display_cosmetics(self, hide_equipment, new_profile)
 				selected_profile = new_profile
