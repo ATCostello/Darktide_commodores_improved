@@ -480,40 +480,79 @@ mod._generate_spawn_profile = function(self, item, optional_specific_profile)
 
 		local player_profile = optional_specific_profile
 
+		local played_profile = player:profile()
+
 		if not player_profile then
-			-- Always start on the operative the player currently has selected, so both the
-			-- preview and the operative cycle begin on the character being played
-			local played_profile = player:profile()
-
+			-- Always start on the operative the player currently has selected, so both the preview and the operative cycle begin on the character being played
 			player_profile = mod.find_profile_by_character_id(current_profiles, played_profile) or played_profile
+		end
 
-			if not player_profile.archetype or player_profile.archetype.name ~= profile.archetype.name then
-				-- Item can't be shown on the selected operative, fall back to the first
-				-- account operative of the archetype the item requires
-				player_profile = mod.find_profile_by_archetype(current_profiles, profile.archetype.name)
-					or played_profile
+		-- determine allowed profile strictly
+		local allowed_profiles_list = {}
+		if item.archetypes and current_profiles then
+			for i = 1, #current_profiles do
+				local p = current_profiles[i]
+				if p.archetype and table.contains(item.archetypes, p.archetype.name) then
+					allowed_profiles_list[#allowed_profiles_list + 1] = p
+				end
 			end
 		end
 
-		if player_profile then
-			local gear_profile = table.clone_instance(player_profile)
+		local chosen_profile = nil
+		if #allowed_profiles_list > 0 then
+			-- prefer currently selected profile if allowed
+			if
+				player_profile
+				and player_profile.archetype
+				and table.contains(item.archetypes, player_profile.archetype.name)
+			then
+				chosen_profile = player_profile
+			end
+			-- prefer currently played profile if allowed and not chosen
+			if
+				not chosen_profile
+				and played_profile
+				and played_profile.archetype
+				and table.contains(item.archetypes, played_profile.archetype.name)
+			then
+				chosen_profile = played_profile
+			end
+			-- prefer one matching item's expected archetype
+			if not chosen_profile and profile.archetype then
+				for i = 1, #allowed_profiles_list do
+					local p = allowed_profiles_list[i]
+					if p.archetype and p.archetype.name == profile.archetype.name then
+						chosen_profile = p
+						break
+					end
+				end
+			end
+			-- fallback to first allowed
+			if not chosen_profile then
+				chosen_profile = allowed_profiles_list[1]
+			end
+		end
 
+		if chosen_profile then
+			local gear_profile = table.clone_instance(chosen_profile)
 			self._default_gear_loadout = table.clone_instance(gear_profile.loadout)
 			self._gear_loadout = table.clone_instance(gear_profile.loadout)
 			gear_profile.loadout = self._gear_loadout
 			gear_profile.character_id = "cosmetics_view_character"
 			self._gear_profile = gear_profile
 			self._can_preview_with_gear = true
+			self._profile = chosen_profile
+			self._presentation_profile = self._profile
+			self._preview_profile = self._profile
+			selected_profile = chosen_profile
 		else
 			self._can_preview_with_gear = false
+			self._profile = self._mannequin_profile
+			self._presentation_profile = self._profile
+			self._preview_profile = self._profile
+			selected_profile = nil
 		end
-
-		self._profile = player_profile
-		self._presentation_profile = self._profile
-		self._preview_profile = self._profile
-		-- self._presentation_profile = self._mannequin_profile
 		self._spawned_profile = nil
-		selected_profile = player_profile
 	end
 end
 
@@ -845,7 +884,7 @@ end
 -- Add buttons to swap preview characters
 StoreItemDetailView._setup_input_legend = function(self)
 	self._input_legend_element = self:_add_element(ViewElementInputLegend, "input_legend", 10)
-	dbg_s = self
+
 	local legend_inputs = Definitions.legend_inputs
 
 	for i = 1, #legend_inputs do

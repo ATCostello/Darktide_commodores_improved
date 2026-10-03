@@ -1,5 +1,5 @@
 local mod = get_mod("commodores_vestures_improved")
-mod.version = "1.6.12"
+mod.version = "1.6.13"
 mod:info("Commodore's Vestures Improved is installed, using version: " .. tostring(mod.version))
 
 local colours = {
@@ -112,7 +112,7 @@ mod.gradientText = function(text, startColor, endColor, colorSpaces)
 		end
 	end
 
-	result = "{#color(" .. colours.title .. ")}" .. result .. "{#reset()}"
+	result = "{#color(" .. colours.title .. ")} " .. result .. "{#reset()}"
 	return result
 end
 
