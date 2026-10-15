@@ -401,11 +401,13 @@ mod.display_cosmetics = function(self, optional_remove_original_gear, optional_s
 
 		StoreItemDetailView._setup_side_panel(self)
 	elseif self.is_weapon_preview and not self._bundle_data then
-		local slot_name = item.slots[1]
-		self._mannequin_loadout[slot_name] = item
-		local gear_loadout = self._gear_loadout
-		if gear_loadout then
-			gear_loadout[slot_name] = item
+		local slot_name = item.slots and item.slots[1]
+		if slot_name then
+			self._mannequin_loadout[slot_name] = item
+			local gear_loadout = self._gear_loadout
+			if gear_loadout then
+				gear_loadout[slot_name] = item
+			end
 		end
 
 		CosmeticsInspectView._start_preview_item(self)

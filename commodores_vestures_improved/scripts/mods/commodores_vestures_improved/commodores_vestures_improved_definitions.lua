@@ -98,6 +98,9 @@ local legend_inputs = {
 		input_action = "cycle_chat_channel",
 		on_pressed_callback = "cycle_preview_operative",
 		visibility_function = function(parent, id)
+			if parent._previewed_with_gear == false then
+				return false
+			end
 			return parent:has_multiple_operatives() and not parent._weapon_preview
 		end,
 	},
@@ -209,6 +212,9 @@ local legend_inputs_cosmetics_inspect_view = {
 		input_action = "cycle_chat_channel",
 		on_pressed_callback = "cycle_preview_operative",
 		visibility_function = function(parent, id)
+			if parent._previewed_with_gear == false then
+				return false
+			end
 			return parent:has_multiple_operatives()
 		end,
 	}
